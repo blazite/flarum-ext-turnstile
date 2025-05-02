@@ -1,0 +1,21 @@
+{
+    "name": "blazite-flarum-turnstile",
+    "private": true,
+    "version": "0.0.0",
+    "devDependencies": {
+        "@flarum/prettier-config": "^1.0.0",
+        "flarum-tsconfig": "^1.0.3",
+        "flarum-webpack-config": "^2.0.2",
+        "prettier": "^3.5.3",
+        "webpack": "^5.99.7",
+        "webpack-cli": "^6.0.1"
+    },
+    "scripts": {
+        "dev": "webpack --mode development --watch",
+        "build": "webpack --mode production",
+        "analyze": "cross-env ANALYZER=true yarn run build",
+        "format": "prettier --write src",
+        "format-check": "prettier --check src"
+    },
+    "prettier": "@flarum/prettier-config"
+}
