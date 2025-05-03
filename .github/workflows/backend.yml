@@ -1,4 +1,4 @@
-name: Turnstile PHP
+name: Cloudflare Turnstile PHP
 
 on: [workflow_dispatch, push, pull_request]
 

@@ -1,4 +1,4 @@
-# Turnstile
+# Cloudflare Turnstile
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) [![Latest Stable Version](https://img.shields.io/packagist/v/blazite/flarum-turnstile.svg)](https://packagist.org/packages/blazite/flarum-turnstile) [![Total Downloads](https://img.shields.io/packagist/dt/blazite/flarum-turnstile.svg)](https://packagist.org/packages/blazite/flarum-turnstile)
 

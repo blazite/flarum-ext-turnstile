@@ -1,6 +1,6 @@
 {
     "name": "blazite/flarum-turnstile",
-    "description": "Implement Cloudflare Turnstile into your Flarum forum.",
+    "description": "Adds Cloudflare Turnstile CAPTCHA protection to your Flarum forum.",
     "keywords": [
         "flarum",
         "captcha",
@@ -33,7 +33,7 @@
     },
     "extra": {
         "flarum-extension": {
-            "title": "Turnstile",
+            "title": "Cloudflare Turnstile",
             "category": "feature",
             "icon": {
                 "image": "resources/assets/Cloudflare_Turnstile_logo.svg",
