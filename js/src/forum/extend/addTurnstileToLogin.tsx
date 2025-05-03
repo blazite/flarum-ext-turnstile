@@ -1,12 +1,12 @@
 import app from 'flarum/forum/app';
-import { extend } from 'flarum/common/extend';
 import LogInModal from 'flarum/forum/components/LogInModal';
 import Turnstile from '../components/Turnstile';
+import { extend } from 'flarum/common/extend';
 
 export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'loginParams', function (data) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
-    data.turnstileToken = this.__turnstileToken;
+    data.turnstileToken = this.__turnstileToken ?? null;
   });
 
   extend(LogInModal.prototype, 'fields', function (fields) {
@@ -23,16 +23,25 @@ export default function addTurnstileToLogin() {
     );
   });
 
-  extend(LogInModal.prototype, 'onerror', function (orig, error) {
-    const errors = error?.response?.errors || [];
+  LogInModal.prototype.onerror = function (error) {
+    const errors = (error?.response?.errors as any[]) ?? [];
     this.alerts.dismiss();
-
-    errors.forEach(e => {
-      if (typeof e.detail === 'string' && e.detail.length) {
-        this.alerts.show({ type: 'error' }, e.detail);
+    if (errors.length) {
+      for (const e of errors) {
+        if (typeof e.detail === 'string' && e.detail.length) {
+          this.alerts.show({ type: 'error' }, e.detail);
+        }
       }
-    });
-
-    orig.call(this, error);
-  });
+      const passwordError = errors.find(
+        e => (e.source?.pointer || '').includes('/password')
+      );
+      if (passwordError && typeof this.password === 'function') this.password('');
+    } else {
+      this.alerts.show(
+        { type: 'error' },
+        app.translator.trans('core.forum.log_in.invalid_login_message')
+      );
+    }
+    this.loaded();
+  };
 }
