@@ -1,7 +1,6 @@
 import app from 'flarum/forum/app';
 import { extend } from 'flarum/common/extend';
 import LogInModal from 'flarum/forum/components/LogInModal';
-
 import Turnstile from '../components/Turnstile';
 
 export default function addTurnstileToLogin() {
@@ -16,7 +15,7 @@ export default function addTurnstileToLogin() {
       'turnstile',
       <Turnstile
         action="log_in"
-        onTurnstileStateChange={token => {
+        onTurnstileStateChange={(token) => {
           this.__turnstileToken = token;
         }}
       />,
@@ -26,26 +25,19 @@ export default function addTurnstileToLogin() {
 
   extend(LogInModal.prototype, 'onerror', function (orig, error) {
     const errors = error?.response?.errors || [];
-    let found = false;
 
-    for (const e of errors) {
-      if (
-        e.source?.pointer === '/data/attributes/turnstileToken' ||
-        (typeof e.detail === 'string' &&
-            e.detail.toLowerCase().includes('turnstile'))
-      ) {
-        this.alerts.show(
-          { type: 'error' },
-          e.detail || 'Please complete the Turnstile challenge.'
-        );
-        found = true;
-      }
+    const turnstile = errors.find(
+      (e) =>
+        e?.source?.pointer === '/data/attributes/turnstileToken' ||
+        (typeof e.detail === 'string' && e.detail.toLowerCase().includes('turnstile'))
+    );
+
+    if (turnstile) {
+      this.alerts.dismiss();
+      this.alerts.show({ type: 'error' }, turnstile.detail || 'Please complete the Turnstile challenge.');
+      this.__turnstileToken = null;
+    } else {
+      orig.call(this, error);
     }
-
-    if (!found && errors.length) {
-      this.alerts.show({ type: 'error' }, errors[0].detail || 'Login failed.');
-    }
-
-    orig.call(this, error);
   });
 }
