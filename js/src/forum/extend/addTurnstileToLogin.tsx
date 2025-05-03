@@ -15,7 +15,7 @@ export default function addTurnstileToLogin() {
       'turnstile',
       <Turnstile
         action="log_in"
-        onTurnstileStateChange={(token) => {
+        onTurnstileStateChange={token => {
           this.__turnstileToken = token;
         }}
       />,
@@ -25,19 +25,14 @@ export default function addTurnstileToLogin() {
 
   extend(LogInModal.prototype, 'onerror', function (orig, error) {
     const errors = error?.response?.errors || [];
+    this.alerts.dismiss();
 
-    const turnstile = errors.find(
-      (e) =>
-        e?.source?.pointer === '/data/attributes/turnstileToken' ||
-        (typeof e.detail === 'string' && e.detail.toLowerCase().includes('turnstile'))
-    );
+    errors.forEach(e => {
+      if (typeof e.detail === 'string' && e.detail.length) {
+        this.alerts.show({ type: 'error' }, e.detail);
+      }
+    });
 
-    if (turnstile) {
-      this.alerts.dismiss();
-      this.alerts.show({ type: 'error' }, turnstile.detail || 'Please complete the Turnstile challenge.');
-      this.__turnstileToken = null;
-    } else {
-      orig.call(this, error);
-    }
+    orig.call(this, error);
   });
 }
