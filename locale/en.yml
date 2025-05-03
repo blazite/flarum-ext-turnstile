@@ -16,5 +16,4 @@ validation:
   required: "Please complete the Turnstile challenge."
 
 attributes:
-  turnstileToken: CAPTCHA
-  turnstile: CAPTCHA
+  turnstileToken: "CAPTCHA"
