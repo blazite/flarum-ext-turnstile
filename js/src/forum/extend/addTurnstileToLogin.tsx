@@ -26,16 +26,13 @@ export default function addTurnstileToLogin() {
   LogInModal.prototype.onerror = function (error) {
     const errors = (error?.response?.errors as any[]) ?? [];
     this.alerts.dismiss();
+
     if (errors.length) {
       for (const e of errors) {
         if (typeof e.detail === 'string' && e.detail.length) {
           this.alerts.show({ type: 'error' }, e.detail);
         }
       }
-      const passwordError = errors.find(
-        e => (e.source?.pointer || '').includes('/password')
-      );
-      if (passwordError && typeof this.password === 'function') this.password('');
     } else {
       this.alerts.show(
         { type: 'error' },
