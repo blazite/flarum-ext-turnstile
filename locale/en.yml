@@ -14,3 +14,7 @@ blazite-turnstile:
 validation:
   turnstile: "We couldn't verify if you're a robot or not. Please refresh the page and try again."
   required: "Please complete the Turnstile challenge."
+
+attributes:
+  turnstileToken: CAPTCHA
+  turnstile: CAPTCHA
