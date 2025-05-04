@@ -11,7 +11,6 @@ export default function addTurnstileToLogin() {
 
   extend(LogInModal.prototype, 'fields', function (fields) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
-
     fields.add(
       'turnstile',
       <Turnstile
@@ -25,31 +24,25 @@ export default function addTurnstileToLogin() {
   });
 
   override(LogInModal.prototype, 'onerror', function (original, error) {
-    if (error.status === 422 && error.response?.errors?.length) {
+    if (error?.status === 422 && error.response?.errors?.length > 0) {
       const errors = error.response.errors;
 
-      const turnstileError = errors.find((e) => {
-        return e.source?.pointer?.includes('turnstileToken') || (e.detail?.toLowerCase().includes('turnstile'));
-      });
+      const relevantError = errors.find(
+        (err) =>
+          err.source?.pointer?.includes('turnstileToken') ||
+          err.detail?.toLowerCase().includes('turnstile') ||
+          err.code?.includes('validation')
+      );
 
-      const requiredError = errors.find((e) => {
-        return e.code === 'validation.required';
-      });
-
-      const errorContent = turnstileError
-        ? app.translator.trans('validation.turnstile')
-        : requiredError
-        ? app.translator.trans('validation.required')
-        : errors[0]?.detail || app.translator.trans('core.forum.log_in.invalid_login_message');
+      const message = relevantError?.detail || app.translator.trans('validation.turnstile');
 
       this.alertAttrs = {
         type: 'error',
-        content: errorContent,
+        content: message,
       };
 
       m.redraw();
       this.onready();
-
       return;
     }
 
