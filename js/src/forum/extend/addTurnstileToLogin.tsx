@@ -1,6 +1,6 @@
 import app from 'flarum/forum/app';
-import { extend } from 'flarum/common/extend';
 import LogInModal from 'flarum/forum/components/LogInModal';
+import { extend } from 'flarum/common/extend';
 import Turnstile from '../components/Turnstile';
 
 export default function addTurnstileToLogin() {
@@ -11,11 +11,15 @@ export default function addTurnstileToLogin() {
 
   extend(LogInModal.prototype, 'fields', function (fields) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
+
+    this.turnstile = null;
+
     fields.add(
       'turnstile',
       <Turnstile
         action="log_in"
-        onTurnstileStateChange={(token: string | null) => {
+        bindParent={this}
+        onTurnstileStateChange={(token) => {
           this.__turnstileToken = token;
         }}
       />,
@@ -26,17 +30,18 @@ export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'onerror', function (_, error) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
 
-    // If the error status is 422 (validation failed)
-    if (error?.status === 422) {
-      // If alert.content is not provided or empty, Flarum shows red bar with no message
-      if (error.alert && (!error.alert.content || !error.alert.content.length)) {
-        error.alert.content = app.translator.trans('blazite-turnstile.forum.required') ||
-          'Please complete the CAPTCHA before login.';
-      }
-
-      this.alertAttrs = error.alert;
-      m.redraw();
-      this.onready();
+    if (this.turnstile?.reset) {
+      this.turnstile.reset();
     }
+
+    if (error.alert && (!error.alert.content || !error.alert.content.length)) {
+      error.alert.content =
+        app.translator.trans('blazite-turnstile.forum.validation_error') ||
+        'Please complete the CAPTCHA before logging in.';
+    }
+
+    this.alertAttrs = error.alert;
+    m.redraw();
+    this.onready();
   });
 }

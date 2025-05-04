@@ -2,10 +2,9 @@ import app from 'flarum/forum/app';
 import { override, extend } from 'flarum/common/extend';
 import Button from 'flarum/common/components/Button';
 import ChangePasswordModal from 'flarum/forum/components/ChangePasswordModal';
-
 import Turnstile from '../components/Turnstile';
 
-export default function addTurnstileToForgotPassword() {
+export default function addTurnstileToChangePassword() {
   ChangePasswordModal.prototype.__turnstileToken = null;
 
   extend(ChangePasswordModal.prototype, 'oninit', function (this: ChangePasswordModal) {
@@ -13,7 +12,9 @@ export default function addTurnstileToForgotPassword() {
   });
 
   override(ChangePasswordModal.prototype, 'content', function (this: ChangePasswordModal, original) {
-    if (!!!app.forum.attribute('blazite-turnstile.forgot')) return;
+    if (!app.forum.attribute('blazite-turnstile.forgot')) return original();
+
+    this.turnstile = null;
 
     return (
       <div className="Modal-body">
@@ -32,6 +33,7 @@ export default function addTurnstileToForgotPassword() {
           </div>
           <Turnstile
             action="forgot_pw"
+            bindParent={this}
             onTurnstileStateChange={(token) => {
               this.__turnstileToken = token;
               this.loading = false;
@@ -44,21 +46,33 @@ export default function addTurnstileToForgotPassword() {
   });
 
   override(ChangePasswordModal.prototype, 'onsubmit', function (this: ChangePasswordModal, original, e: SubmitEvent) {
-    if (!!!app.forum.attribute('blazite-turnstile.forgot')) return;
+    if (!app.forum.attribute('blazite-turnstile.forgot')) return original.call(this, e);
 
     e.preventDefault();
-
     this.loading = true;
 
-    app
-      .request({
-        method: 'POST',
-        url: app.forum.attribute('apiUrl') + '/forgot',
-        body: {
-          email: app.session.user!.email(),
-          turnstileToken: this.__turnstileToken,
-        },
-      })
-      .then(this.hide.bind(this), this.loaded.bind(this));
+    app.request({
+      method: 'POST',
+      url: app.forum.attribute('apiUrl') + '/forgot',
+      body: {
+        email: app.session.user!.email(),
+        turnstileToken: this.__turnstileToken,
+      },
+    }).then(this.hide.bind(this)).catch((error) => {
+      if (this.turnstile?.reset) {
+        this.turnstile.reset();
+      }
+
+      if (error.alert && (!error.alert.content || !error.alert.content.length)) {
+        error.alert.content =
+          app.translator.trans('blazite-turnstile.forum.validation_error') ||
+          'Please complete the Turnstile challenge.';
+      }
+
+      this.alertAttrs = error.alert;
+      this.loading = false;
+      m.redraw();
+      this.onready();
+    });
   });
 }

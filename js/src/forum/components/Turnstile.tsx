@@ -1,11 +1,11 @@
 import Component from 'flarum/common/Component';
 import app from 'flarum/forum/app';
-
 import type { VnodeDOM, Vnode } from 'mithril';
 
 interface ITurnstileAttrs {
   action?: string;
   onTurnstileStateChange?: (token: string | null) => void;
+  bindParent?: any; // Can be used to inject reset into modal instance
 }
 
 export default class Turnstile extends Component<ITurnstileAttrs> {
@@ -14,7 +14,6 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
 
   oninit(vnode: Vnode<ITurnstileAttrs, this>) {
     super.oninit(vnode);
-
     this.turnstileLoaded = !!window.turnstile;
   }
 
@@ -41,17 +40,14 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
       let currentTheme = getTheme();
 
       if (currentTheme === Themes.AUTO) {
-        currentTheme = window.matchMedia('(prefers-color-scheme:dark)').matches ? Themes.DARK : Themes.LIGHT;
+        currentTheme = window.matchMedia('(prefers-color-scheme:dark)').matches
+          ? Themes.DARK
+          : Themes.LIGHT;
       }
 
-      if (currentTheme === Themes.DARK) {
-        return 'dark';
-      } else if (currentTheme === Themes.LIGHT) {
-        return 'light';
-      }
+      return currentTheme === Themes.DARK ? 'dark' : 'light';
     }
 
-    // fof/nightmode is not installed, so we fall back to detecting if the forum has been set to dark mode or not.
     return !!!app.forum.attribute('turnstile_dark_mode') ? 'light' : 'dark';
   }
 
@@ -61,7 +57,6 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
 
   onTurnstileExpire() {
     if (this.widgetId) window.turnstile.reset(this.widgetId);
-
     this.attrs.onTurnstileStateChange?.(null);
   }
 
@@ -71,31 +66,39 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
 
   createTurnstile() {
     if (!this.turnstileLoaded) return;
+    this.widgetId = window.turnstile.render(this.element, this.config);
 
-    window.turnstile.render(this.element, this.config);
+    if (this.attrs.bindParent) {
+      this.attrs.bindParent.turnstile = {
+        reset: () => {
+          if (this.widgetId) window.turnstile.reset(this.widgetId);
+        },
+      };
+    }
   }
 
   removeTurnstile() {
     if (!this.turnstileLoaded) return;
-
     if (this.widgetId) window.turnstile.remove(this.widgetId);
   }
 
-  oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>): void {
+  oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>) {
     super.oncreate(vnode);
-
     this.createTurnstile();
   }
 
-  onbeforeremove(vnode: VnodeDOM<ITurnstileAttrs, this>): void {
+  onbeforeremove(vnode: VnodeDOM<ITurnstileAttrs, this>) {
     super.onbeforeremove(vnode);
-
     this.removeTurnstile();
   }
 
-  view(vnode: VnodeDOM<ITurnstileAttrs, this>) {
+  view() {
     if (!this.turnstileLoaded) {
-      return <p class="BlaziteTurnstile-notLoaded">{app.translator.trans('blazite-turnstile.forum.not_loaded_error')}</p>;
+      return (
+        <p class="BlaziteTurnstile-notLoaded">
+          {app.translator.trans('blazite-turnstile.forum.not_loaded_error')}
+        </p>
+      );
     }
 
     return <div class="Blazite-Turnstile Form-group" />;
