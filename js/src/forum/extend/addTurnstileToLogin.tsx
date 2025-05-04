@@ -5,12 +5,12 @@ import Turnstile from '../components/Turnstile';
 
 export default function addTurnstileToLogin() {
 extend(LogInModal.prototype, 'loginParams', function (data) {
-if (!!!app.forum.attribute('blazite-turnstile.signin')) return;
+if (!app.forum.attribute('blazite-turnstile.signin')) return;
 data.turnstileToken = this.__turnstileToken;
 });
 
 extend(LogInModal.prototype, 'fields', function (fields) {
-if (!!!app.forum.attribute('blazite-turnstile.signin')) return;
+if (!app.forum.attribute('blazite-turnstile.signin')) return;
 fields.add(
 'turnstile',
 <Turnstile
@@ -25,24 +25,19 @@ this.__turnstileToken = token;
 
 override(LogInModal.prototype, 'onerror', function (original, error) {
 if (error.status === 422 && error.response?.errors?.length) {
-const turnstileError = error.response.errors.find((e) => {
-return (
-e.source?.pointer?.includes('turnstileToken') ||
-(typeof e.detail === 'string' && e.detail.toLowerCase().includes('turnstile'))
-);
-});
+const firstError = error.response.errors[0];
 
-if (turnstileError) {
-error.alert = {
+if (!this.alertAttrs) {
+this.alertAttrs = {
 type: 'error',
-content: app.translator.trans('blazite-turnstile.validation.required') || turnstileError.detail || 'Turnstile validation failed.',
+content: app.translator.trans(firstError.detail || 'validation.required'),
 };
+}
 
-this.alertAttrs = error.alert;
 m.redraw();
 this.onready();
+
 return;
-}
 }
 
 original(error);
