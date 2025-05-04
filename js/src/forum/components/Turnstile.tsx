@@ -10,8 +10,8 @@ interface ITurnstileAttrs {
 
 export default class Turnstile extends Component<ITurnstileAttrs> {
   widgetId?: string;
-  element!: HTMLElement;
   turnstileLoaded = false;
+  element!: HTMLElement;
 
   oninit(vnode: Vnode<ITurnstileAttrs, this>) {
     super.oninit(vnode);
@@ -21,7 +21,7 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   get config() {
     return {
       sitekey: app.forum.attribute('blazite-turnstile.site_key'),
-      size: 'normal', // Use 'normal', 'compact', or 'invisible' if preferred
+      size: 'normal',
       theme: this.getCurrentTheme(),
       action: this.attrs.action ?? 'login',
       callback: this.onTurnstileComplete.bind(this),
@@ -33,6 +33,7 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   getCurrentTheme() {
     const getTheme = flarum.extensions['fof-nightmode']?.getTheme;
     const Themes = flarum.extensions['fof-nightmode']?.Themes;
+
     if (getTheme && Themes) {
       let currentTheme = getTheme();
       if (currentTheme === Themes.AUTO) {
@@ -59,11 +60,13 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   createTurnstile() {
     if (!this.turnstileLoaded) return;
 
-    // remove any existing widget if already on node
+    // Destroy previous widget if needed
     this.removeTurnstile();
 
+    // Render and get widgetId
     this.widgetId = window.turnstile.render(this.element, this.config);
 
+    // Expose reset back to parent/modal
     if (this.attrs.bindParent) {
       this.attrs.bindParent.turnstile = {
         reset: () => {
@@ -83,14 +86,10 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
     }
   }
 
-  oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>): void {
+  oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>) {
     super.oncreate(vnode);
     this.element = vnode.dom as HTMLElement;
     this.createTurnstile();
-  }
-
-  onupdate() {
-    // Optional: re-render if needed due to change
   }
 
   onbeforeremove() {
