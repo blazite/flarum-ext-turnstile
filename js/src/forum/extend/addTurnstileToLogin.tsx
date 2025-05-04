@@ -29,17 +29,19 @@ export default function addTurnstileToLogin() {
 
   extend(LogInModal.prototype, 'onerror', function (_, error) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
-
+  
     if (this.turnstile?.reset) {
       this.turnstile.reset();
     }
-
+  
+    this.__turnstileToken = null;
+  
     if (error.alert && (!error.alert.content || !error.alert.content.length)) {
       error.alert.content =
         app.translator.trans('blazite-turnstile.forum.validation_error') ||
-        'Please complete the CAPTCHA before logging in.';
+        'Please complete the Turnstile challenge.';
     }
-
+  
     this.alertAttrs = error.alert;
     m.redraw();
     this.onready();

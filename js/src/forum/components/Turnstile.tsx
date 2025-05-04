@@ -72,6 +72,7 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
       this.attrs.bindParent.turnstile = {
         reset: () => {
           if (this.widgetId) window.turnstile.reset(this.widgetId);
+          this.attrs.onTurnstileStateChange?.(null);
         },
       };
     }
