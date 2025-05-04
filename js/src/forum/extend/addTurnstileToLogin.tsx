@@ -30,7 +30,7 @@ export default function addTurnstileToLogin() {
     if (error?.status === 422) {
       // If alert.content is not provided or empty, Flarum shows red bar with no message
       if (error.alert && (!error.alert.content || !error.alert.content.length)) {
-        error.alert.content = app.translator.trans('blazite-turnstile.forum.validation_error') ||
+        error.alert.content = app.translator.trans('blazite-turnstile.validation.required') ||
           'Please complete the CAPTCHA before login.';
       }
 
