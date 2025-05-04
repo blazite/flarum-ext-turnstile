@@ -24,11 +24,42 @@ export default function addTurnstileToLogin() {
   });
 
   override(LogInModal.prototype, 'onerror', function (original, error) {
-    this.alertAttrs = {
-      type: 'error',
-      content: '🚨 CAPTCHA missing or invalid!',
-    };
-    m.redraw();
-    this.onready();
+    if (error?.status === 422 && error.response?.errors?.length > 0) {
+      const errors = error.response.errors;
+
+      const relevantError = errors.find(
+        (err) =>
+          err.source?.pointer?.includes('turnstileToken') ||
+          err.code?.includes('validation') ||
+          err.detail?.toLowerCase().includes('turnstile')
+      );
+
+      let message = '';
+
+      if (relevantError) {
+        if (relevantError.code === 'validation.required') {
+          message = app.translator.trans('validation.turnstile');
+        } else if (relevantError.code?.startsWith('validation.')) {
+          message = app.translator.trans(relevantError.code);
+        } else if (relevantError.detail) {
+          message = relevantError.detail;
+        }
+      }
+
+      if (!message) {
+        message = app.translator.trans('validation.turnstile');
+      }
+
+      this.alertAttrs = {
+        type: 'error',
+        content: message,
+      };
+
+      m.redraw();
+      this.onready();
+      return;
+    }
+
+    original(error);
   });
 }
