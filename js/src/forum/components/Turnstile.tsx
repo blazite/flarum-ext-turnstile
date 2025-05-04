@@ -5,7 +5,6 @@ import type { VnodeDOM, Vnode } from 'mithril';
 interface ITurnstileAttrs {
   action?: string;
   onTurnstileStateChange?: (token: string | null) => void;
-  bindParent?: any; // Can be used to inject reset into modal instance
 }
 
 export default class Turnstile extends Component<ITurnstileAttrs> {
@@ -19,7 +18,6 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
 
   get config() {
     const { action } = this.attrs;
-
     return {
       action,
       theme: this.getCurrentTheme(),
@@ -56,7 +54,6 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   }
 
   onTurnstileExpire() {
-    if (this.widgetId) window.turnstile.reset(this.widgetId);
     this.attrs.onTurnstileStateChange?.(null);
   }
 
@@ -66,21 +63,17 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
 
   createTurnstile() {
     if (!this.turnstileLoaded) return;
-    this.widgetId = window.turnstile.render(this.element, this.config);
 
-    if (this.attrs.bindParent) {
-      this.attrs.bindParent.turnstile = {
-        reset: () => {
-          if (this.widgetId) window.turnstile.reset(this.widgetId);
-          this.attrs.onTurnstileStateChange?.(null);
-        },
-      };
-    }
+    // Render Turnstile and grab widgetId
+    this.widgetId = window.turnstile.render(this.element, this.config);
   }
 
   removeTurnstile() {
     if (!this.turnstileLoaded) return;
-    if (this.widgetId) window.turnstile.remove(this.widgetId);
+
+    if (this.widgetId) {
+      window.turnstile.remove(this.widgetId);
+    }
   }
 
   oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>) {
