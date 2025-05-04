@@ -42,7 +42,7 @@ export default function addTurnstileToLogin() {
     }
 
     if (error && error.alert) {
-      error.alert.content = app.translator.trans('core.forum.log_in.invalid_login_message');
+      error.alert.content = app.translator.trans('blazite-turnstile.forum.error.required');
       this.alertAttrs = error.alert;
       m.redraw();
       return;
