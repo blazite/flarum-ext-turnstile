@@ -5,6 +5,7 @@ import type { VnodeDOM, Vnode } from 'mithril';
 interface ITurnstileAttrs {
   action?: string;
   onTurnstileStateChange?: (token: string | null) => void;
+  bindParent?: any;
 }
 
 export default class Turnstile extends Component<ITurnstileAttrs> {
@@ -36,13 +37,11 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
 
     if (getTheme && Themes) {
       let currentTheme = getTheme();
-
       if (currentTheme === Themes.AUTO) {
         currentTheme = window.matchMedia('(prefers-color-scheme:dark)').matches
           ? Themes.DARK
           : Themes.LIGHT;
       }
-
       return currentTheme === Themes.DARK ? 'dark' : 'light';
     }
 
@@ -64,16 +63,27 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   createTurnstile() {
     if (!this.turnstileLoaded) return;
 
-    // Render Turnstile and grab widgetId
-    this.widgetId = window.turnstile.render(this.element, this.config);
+    window.turnstile.render(this.element, this.config);
+
+    // Properly capture the widget ID after render
+    this.widgetId = this.element.querySelector('[data-widget-id]')?.getAttribute('data-widget-id') || undefined;
+
+    // Bind reset to modal instance
+    if (this.attrs.bindParent) {
+      this.attrs.bindParent.turnstile = {
+        reset: () => {
+          if (this.widgetId) {
+            window.turnstile.reset(this.widgetId);
+            this.attrs.onTurnstileStateChange?.(null);
+          }
+        },
+      };
+    }
   }
 
   removeTurnstile() {
     if (!this.turnstileLoaded) return;
-
-    if (this.widgetId) {
-      window.turnstile.remove(this.widgetId);
-    }
+    if (this.widgetId) window.turnstile.remove(this.widgetId);
   }
 
   oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>) {

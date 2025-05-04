@@ -4,10 +4,6 @@ import LogInModal from 'flarum/forum/components/LogInModal';
 import Turnstile from '../components/Turnstile';
 
 export default function addTurnstileToLogin() {
-  extend(LogInModal.prototype, 'oninit', function () {
-    this.turnstileVersion = 0;
-  });
-
   extend(LogInModal.prototype, 'loginParams', function (data) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
     data.turnstileToken = this.__turnstileToken;
@@ -16,15 +12,18 @@ export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'fields', function (fields) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
 
+    // bind reset() to modal so we can call it in onerror
+    this.turnstile = null;
+
     fields.add(
       'turnstile',
-      m(Turnstile, {
-        key: `turnstile-${this.turnstileVersion}`,
-        action: 'log_in',
-        onTurnstileStateChange: (token) => {
+      <Turnstile
+        action="log_in"
+        bindParent={this}
+        onTurnstileStateChange={(token) => {
           this.__turnstileToken = token;
-        },
-      }),
+        }}
+      />,
       -5
     );
   });
@@ -32,7 +31,11 @@ export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'onerror', function (_, error) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
 
-    this.turnstileVersion++;
+    // properly reset CAPTCHA using Cloudflare API
+    if (this.turnstile?.reset) {
+      this.turnstile.reset();
+    }
+
     this.__turnstileToken = null;
 
     if (error.alert && (!error.alert.content || !error.alert.content.length)) {
