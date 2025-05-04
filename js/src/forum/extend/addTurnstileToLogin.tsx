@@ -15,7 +15,7 @@ export default function addTurnstileToLogin() {
       'turnstile',
       <Turnstile
         action="log_in"
-        onTurnstileStateChange={token => {
+        onTurnstileStateChange={(token) => {
           this.__turnstileToken = token;
         }}
       />,
@@ -38,9 +38,14 @@ export default function addTurnstileToLogin() {
         { type: 'error' },
         errors[0].detail || app.translator.trans('blazite-turnstile.forum.error.required')
       );
-    } else if (errors.length) {
-      this.alerts.show({ type: 'error' }, errors[0].detail);
-    } else {
+    }
+    else if (errors.length) {
+      this.alerts.show(
+        { type: 'error' },
+        errors[0].detail || app.translator.trans('core.forum.log_in.invalid_login_message')
+      );
+    }
+    else {
       this.alerts.show(
         { type: 'error' },
         app.translator.trans('core.forum.log_in.invalid_login_message')
