@@ -1,7 +1,7 @@
 import app from 'flarum/forum/app';
+import { extend, override } from 'flarum/common/extend';
 import LogInModal from 'flarum/forum/components/LogInModal';
 import Turnstile from '../components/Turnstile';
-import { extend } from 'flarum/common/extend';
 
 export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'loginParams', function (data) {
@@ -15,7 +15,7 @@ export default function addTurnstileToLogin() {
       'turnstile',
       <Turnstile
         action="log_in"
-        onTurnstileStateChange={token => {
+        onTurnstileStateChange={(token) => {
           this.__turnstileToken = token;
         }}
       />,
@@ -23,22 +23,31 @@ export default function addTurnstileToLogin() {
     );
   });
 
-  LogInModal.prototype.onerror = function (error) {
-    const errors = (error?.response?.errors as any[]) ?? [];
-    this.alerts.dismiss();
-
-    if (errors.length) {
-      for (const e of errors) {
-        if (typeof e.detail === 'string' && e.detail.length) {
-          this.alerts.show({ type: 'error' }, e.detail);
-        }
-      }
-    } else {
-      this.alerts.show(
-        { type: 'error' },
-        app.translator.trans('core.forum.log_in.invalid_login_message')
+  override(LogInModal.prototype, 'onerror', function (original, error) {
+    if (error && error.status === 422 && error.response && error.response.errors) {
+      const errors = error.response.errors;
+      const turnstileError = errors.find(
+        (e) =>
+          (e.source?.pointer === '/data/attributes/turnstileToken') ||
+          (typeof e.detail === 'string' && e.detail.toLowerCase().includes('turnstile'))
       );
+      if (turnstileError) {
+        error.alert = error.alert || {};
+        error.alert.content =
+          turnstileError.detail || app.translator.trans('blazite-turnstile.forum.error.required');
+        this.alertAttrs = error.alert;
+        m.redraw();
+        return;
+      }
     }
-    this.loaded();
-  };
+
+    if (error && error.alert) {
+      error.alert.content = app.translator.trans('core.forum.log_in.invalid_login_message');
+      this.alertAttrs = error.alert;
+      m.redraw();
+      return;
+    }
+
+    original(error);
+  });
 }
