@@ -11,6 +11,7 @@ export default function addTurnstileToLogin() {
 
   extend(LogInModal.prototype, 'fields', function (fields) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
+
     fields.add(
       'turnstile',
       <Turnstile
@@ -24,40 +25,25 @@ export default function addTurnstileToLogin() {
   });
 
   override(LogInModal.prototype, 'onerror', function (original, error) {
-    if (error?.status === 422 && error.response?.errors?.length > 0) {
+    if (error?.status === 422 && Array.isArray(error.response?.errors)) {
       const errors = error.response.errors;
 
-      const relevantError = errors.find(
-        (err) =>
-          err.source?.pointer?.includes('turnstileToken') ||
-          err.code?.includes('validation') ||
-          err.detail?.toLowerCase().includes('turnstile')
+
+      const turnstileError = errors.find((e) =>
+        e.source?.pointer?.includes('turnstileToken')
       );
 
-      let message = '';
+      const message = app.translator.trans('validation.turnstile');
 
-      if (relevantError) {
-        if (relevantError.code === 'validation.required') {
-          message = app.translator.trans('validation.turnstile');
-        } else if (relevantError.code?.startsWith('validation.')) {
-          message = app.translator.trans(relevantError.code);
-        } else if (relevantError.detail) {
-          message = relevantError.detail;
-        }
+      if (turnstileError) {
+        this.alertAttrs = {
+          type: 'error',
+          content: message || 'CAPTCHA failed or incomplete',
+        };
+        m.redraw();
+        this.onready();
+        return;
       }
-
-      if (!message) {
-        message = app.translator.trans('validation.turnstile');
-      }
-
-      this.alertAttrs = {
-        type: 'error',
-        content: message,
-      };
-
-      m.redraw();
-      this.onready();
-      return;
     }
 
     original(error);
