@@ -18,13 +18,13 @@ export default function addTurnstileToLogin() {
 
     fields.add(
       'turnstile',
-      <Turnstile
-        key={`turnstile-${this.turnstileVersion}`} // ✅ ensure rerender!
-        action="log_in"
-        onTurnstileStateChange={(token) => {
+      m(Turnstile, {
+        key: `turnstile-${this.turnstileVersion}`,
+        action: 'log_in',
+        onTurnstileStateChange: (token) => {
           this.__turnstileToken = token;
-        }}
-      />,
+        },
+      }),
       -5
     );
   });
@@ -32,7 +32,6 @@ export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'onerror', function (_, error) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
 
-    // ✅ Rerender the Turnstile widget by changing the key
     this.turnstileVersion++;
     this.__turnstileToken = null;
 
