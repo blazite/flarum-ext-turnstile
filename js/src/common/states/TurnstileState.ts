@@ -11,12 +11,12 @@ export default class TurnstileState {
     this.errorCallback = errorCallback;
   }
 
-  render(element) {
+  render(element, theme: 'light' | 'dark' = 'auto') {
     if (!window.turnstile) return;
 
     this.widgetId = window.turnstile.render(element, {
       sitekey: app.forum.attribute('blazite-turnstile.site_key'),
-      theme: app.forum.attribute('turnstile_dark_mode') ? 'dark' : 'light',
+      theme,
       size: 'normal',
       callback: (token) => {
         this.token = token;
