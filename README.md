@@ -10,9 +10,9 @@ This extension integrates [Cloudflare Turnstile](https://www.cloudflare.com/prod
 
 ### 🚀 Features
 
-- Protect Signup, Login, and Forgot Password modals with easy Cloudflare Turnstile integration.
+- Protect Signup, Login, and Forgot Password modals with Cloudflare Turnstile integration.
 - Toggle protection per modal via the admin dashboard settings.
-- Seamless operation with support for both light and dark themes.
+- Seamless support for both light and dark themes.
 
 ---
 
@@ -32,7 +32,7 @@ composer require blazite/flarum-turnstile:"*"
 
 Then enable the extension in the Admin Dashboard and configure your Turnstile site and secret keys.
 
-👉 You can get your keys from the [Cloudflare Turnstile Dashboard](https://dash.cloudflare.com/?to=/:account/turnstile).
+You can get your keys from the [Cloudflare Turnstile Dashboard](https://dash.cloudflare.com/?to=/:account/turnstile).
 
 ---
 
