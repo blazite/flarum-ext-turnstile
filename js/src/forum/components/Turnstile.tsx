@@ -10,21 +10,20 @@ interface ITurnstileAttrs {
 
 export default class Turnstile extends Component<ITurnstileAttrs> {
   widgetId?: string;
-  turnstileLoaded!: boolean;
+  element!: HTMLElement;
+  turnstileLoaded = false;
 
   oninit(vnode: Vnode<ITurnstileAttrs, this>) {
     super.oninit(vnode);
-    this.turnstileLoaded = !!window.turnstile;
+    this.turnstileLoaded = typeof window.turnstile !== 'undefined';
   }
 
   get config() {
-    const { action } = this.attrs;
     return {
-      action,
-      theme: this.getCurrentTheme(),
-      language: app.translator.getLocale() || 'auto',
       sitekey: app.forum.attribute('blazite-turnstile.site_key'),
-      size: 'flexible',
+      size: 'normal', // Use 'normal', 'compact', or 'invisible' if preferred
+      theme: this.getCurrentTheme(),
+      action: this.attrs.action ?? 'login',
       callback: this.onTurnstileComplete.bind(this),
       'expired-callback': this.onTurnstileExpire.bind(this),
       'error-callback': this.onTurnstileError.bind(this),
@@ -34,13 +33,10 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   getCurrentTheme() {
     const getTheme = flarum.extensions['fof-nightmode']?.getTheme;
     const Themes = flarum.extensions['fof-nightmode']?.Themes;
-
     if (getTheme && Themes) {
       let currentTheme = getTheme();
       if (currentTheme === Themes.AUTO) {
-        currentTheme = window.matchMedia('(prefers-color-scheme:dark)').matches
-          ? Themes.DARK
-          : Themes.LIGHT;
+        currentTheme = window.matchMedia('(prefers-color-scheme:dark)').matches ? Themes.DARK : Themes.LIGHT;
       }
       return currentTheme === Themes.DARK ? 'dark' : 'light';
     }
@@ -63,12 +59,11 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   createTurnstile() {
     if (!this.turnstileLoaded) return;
 
-    window.turnstile.render(this.element, this.config);
+    // remove any existing widget if already on node
+    this.removeTurnstile();
 
-    // Properly capture the widget ID after render
-    this.widgetId = this.element.querySelector('[data-widget-id]')?.getAttribute('data-widget-id') || undefined;
+    this.widgetId = window.turnstile.render(this.element, this.config);
 
-    // Bind reset to modal instance
     if (this.attrs.bindParent) {
       this.attrs.bindParent.turnstile = {
         reset: () => {
@@ -82,17 +77,23 @@ export default class Turnstile extends Component<ITurnstileAttrs> {
   }
 
   removeTurnstile() {
-    if (!this.turnstileLoaded) return;
-    if (this.widgetId) window.turnstile.remove(this.widgetId);
+    if (this.widgetId && window.turnstile) {
+      window.turnstile.remove(this.widgetId);
+      this.widgetId = undefined;
+    }
   }
 
-  oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>) {
+  oncreate(vnode: VnodeDOM<ITurnstileAttrs, this>): void {
     super.oncreate(vnode);
+    this.element = vnode.dom as HTMLElement;
     this.createTurnstile();
   }
 
-  onbeforeremove(vnode: VnodeDOM<ITurnstileAttrs, this>) {
-    super.onbeforeremove(vnode);
+  onupdate() {
+    // Optional: re-render if needed due to change
+  }
+
+  onbeforeremove() {
     this.removeTurnstile();
   }
 

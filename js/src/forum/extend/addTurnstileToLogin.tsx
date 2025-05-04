@@ -12,7 +12,6 @@ export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'fields', function (fields) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
 
-    // bind reset() to modal so we can call it in onerror
     this.turnstile = null;
 
     fields.add(
@@ -31,7 +30,6 @@ export default function addTurnstileToLogin() {
   extend(LogInModal.prototype, 'onerror', function (_, error) {
     if (!app.forum.attribute('blazite-turnstile.signin')) return;
 
-    // properly reset CAPTCHA using Cloudflare API
     if (this.turnstile?.reset) {
       this.turnstile.reset();
     }
@@ -39,9 +37,7 @@ export default function addTurnstileToLogin() {
     this.__turnstileToken = null;
 
     if (error.alert && (!error.alert.content || !error.alert.content.length)) {
-      error.alert.content =
-        app.translator.trans('blazite-turnstile.forum.validation_error') ||
-        'Please complete the CAPTCHA.';
+      error.alert.content = app.translator.trans('blazite-turnstile.forum.validation_error');
     }
 
     this.alertAttrs = error.alert;
