@@ -1,53 +1,45 @@
 import app from 'flarum/forum/app';
-import { extend, override } from 'flarum/common/extend';
 import LogInModal from 'flarum/forum/components/LogInModal';
+import { extend, override } from 'flarum/common/extend';
+import TurnstileState from '../../common/states/TurnstileState';
 import Turnstile from '../components/Turnstile';
 
 export default function addTurnstileToLogin() {
-  // Extend loginParams to include Turnstile token
-  extend(LogInModal.prototype, 'loginParams', function (params) {
-    if (!app.forum.attribute('blazite-turnstile.signin')) return;
-    params.turnstileToken = this.__turnstileToken;
+  const isEnabled = () => !!app.forum.attribute('blazite-turnstile.signin');
+
+  extend(LogInModal.prototype, 'oninit', function () {
+    if (!isEnabled()) return;
+
+    this.turnstile = new TurnstileState(
+      () => {}, // Success callback — not needed unless you want behavior
+      (alertAttrs) => {
+        this.loaded();
+        this.alertAttrs = alertAttrs;
+      }
+    );
   });
 
-  // Add the Turnstile widget to the modal
-  extend(LogInModal.prototype, 'fields', function (fields) {
-    if (!app.forum.attribute('blazite-turnstile.signin')) return;
+  extend(LogInModal.prototype, 'loginParams', function (data) {
+    if (!isEnabled()) return;
+    data.turnstileToken = this.turnstile.getResponse();
+  });
 
-    this.turnstile = null;
+  extend(LogInModal.prototype, 'fields', function (fields) {
+    if (!isEnabled()) return;
 
     fields.add(
       'turnstile',
-      <Turnstile
-        action="log_in"
-        bindParent={this} // allows access to this.turnstile.reset()
-        onTurnstileStateChange={(token: string | null) => {
-          this.__turnstileToken = token;
-        }}
-      />,
+      <Turnstile state={this.turnstile} />,
       -5
     );
   });
 
-  // 🚨 OVERRIDE onerror to handle all errors (401, 422, etc.)
-  override(LogInModal.prototype, 'onerror', function (original, error) {
-    if (!app.forum.attribute('blazite-turnstile.signin')) {
-      return original(error);
-    }
+  extend(LogInModal.prototype, 'onerror', function (_, error) {
+    if (!isEnabled()) return;
+    this.turnstile.reset();
 
-    // ✅ Reset CAPTCHA
-    if (this.turnstile?.reset) {
-      this.turnstile.reset();
-    }
-
-    // ✅ Clear used token
-    this.__turnstileToken = null;
-
-    // ✅ Set fallback alert content if missing
     if (error.alert && (!error.alert.content || !error.alert.content.length)) {
       error.alert.content = app.translator.trans('blazite-turnstile.forum.validation_error');
     }
-
-    original(error); // call base handler
   });
 }
